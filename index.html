@@ -237,7 +237,9 @@ if (dest) {
 const data = { Nome: nome, WhatsApp: fone, 'E-mail': email || '(não informado)', Idioma: LANG === 'en' ? 'Inglês' : 'Português', Página: location.href, Data: new Date().toLocaleString('pt-BR'),
 _subject: `Novo contato no site Bruna Dallo: ${nome}`, _template: 'table', _captcha: 'false' };
 if (email) data._replyto = email;
-try { fetch(`https://formsubmit.co/ajax/${dest}`, { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(data) }).catch(() => {}); } catch (_) {}
+const fd = new FormData(); Object.entries(data).forEach(([k, v]) => fd.append(k, v));
+try { fetch(`https://formsubmit.co/ajax/${dest}`, { method: 'POST', headers: { Accept: 'application/json' }, body: fd })
+.then(r => r.json()).then(j => console.log('[FormSubmit]', j)).catch(e => console.warn('[FormSubmit] falhou', e)); } catch (_) {}
 }
 $('#leadWa').href = wa; f.hidden = true; ok.hidden = false;
 let w = null; try { w = window.open(wa, '_blank'); if (w) w.opener = null; } catch (_) {}
