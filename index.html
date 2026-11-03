@@ -232,15 +232,22 @@ if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return bad($('#leadEmail
 if (Date.now() - openedAt < 1200) return; // robôs enviam instantaneamente
 btn.disabled = true;
 const wa = waLink(nome.split(' ')[0]);
-const dest = CONFIG.formsubmitAlias || CONFIG.emailLeads;
-if (dest) {
-const data = { Nome: nome, WhatsApp: fone, 'E-mail': email || '(não informado)', Idioma: LANG === 'en' ? 'Inglês' : 'Português', Página: location.href, Data: new Date().toLocaleString('pt-BR'),
+const idioma = LANG === 'en' ? 'Inglês' : 'Português';
+const reserva = () => {
+const dest = CONFIG.formsubmitAlias || CONFIG.emailLeads; if (!dest) return;
+const data = { Nome: nome, WhatsApp: fone, 'E-mail': email || '(não informado)', Idioma: idioma, Página: location.href, Data: new Date().toLocaleString('pt-BR'),
 _subject: `Novo contato no site Bruna Dallo: ${nome}`, _template: 'table', _captcha: 'false' };
 if (email) data._replyto = email;
 const fd = new FormData(); Object.entries(data).forEach(([k, v]) => fd.append(k, v));
-try { fetch(`https://formsubmit.co/ajax/${dest}`, { method: 'POST', headers: { Accept: 'application/json' }, body: fd })
-.then(r => r.json()).then(j => console.log('[FormSubmit]', j)).catch(e => console.warn('[FormSubmit] falhou', e)); } catch (_) {}
-}
+fetch(`https://formsubmit.co/ajax/${dest}`, { method: 'POST', headers: { Accept: 'application/json' }, body: fd })
+.then(r => r.json()).then(j => console.log('[FormSubmit]', j)).catch(e => console.warn('[FormSubmit] falhou', e));
+};
+try {
+fetch('/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, whatsapp: fone, email, idioma, pagina: location.href }) })
+.then(r => r.json().catch(() => ({})).then(j => ({ ok: r.ok && j.ok, j })))
+.then(({ ok: sent, j }) => { if (sent) console.log('[lead] e-mail enviado pela Vercel'); else { console.warn('[lead] /api/lead não enviou:', j && j.erro); reserva(); } })
+.catch(() => { console.warn('[lead] /api/lead indisponível, usando FormSubmit'); reserva(); });
+} catch (_) { reserva(); }
 $('#leadWa').href = wa; f.hidden = true; ok.hidden = false;
 let w = null; try { w = window.open(wa, '_blank'); if (w) w.opener = null; } catch (_) {}
 if (!w) setTimeout(() => { location.href = wa; }, 900);
